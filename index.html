@@ -32,6 +32,33 @@
       margin-bottom: 25px;
       font-weight: 600;
     }
+    .profile-info {
+      text-align: center;
+      margin-bottom: 25px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #c8e6c9;
+    }
+    .profile-info img {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-bottom: 10px;
+      border: 3px solid #4caf50;
+    }
+    .profile-info p {
+      margin: 5px 0;
+      color: #424242;
+    }
+    .profile-info .display-name {
+      font-weight: 600;
+      font-size: 1.1em;
+      color: #2e7d32;
+    }
+    .profile-info .status-message {
+      font-size: 0.9em;
+      color: #757575;
+    }
     .form-group {
       margin-bottom: 20px;
     }
@@ -92,6 +119,12 @@
 <body>
   <div class="container">
     <h2>ลงทะเบียนผู้ใช้งาน</h2>
+
+    <div class="profile-info" id="profileInfo" style="display: none;">
+      <img id="profilePicture" src="" alt="Profile Picture">
+      <p><span class="display-name" id="displayName"></span></p>
+      <p class="status-message" id="statusMessage"></p>
+    </div>
     <form id="registrationForm">
       <div class="form-group">
         <label for="name">ชื่อ-นามสกุล:</label>
@@ -124,12 +157,31 @@
     async function initializeLiff() {
       try {
         await liff.init({ liffId: LIFF_ID });
+
         if (!liff.isLoggedIn()) {
           liff.login();
+        } else {
+          // ถ้าล็อกอินแล้ว ให้แสดงข้อมูลโปรไฟล์
+          displayUserProfile();
         }
       } catch (err) {
         console.error("LIFF initialization failed", err);
         document.getElementById('responseMessage').innerText = 'เกิดข้อผิดพลาดในการโหลด LIFF: ' + err.message;
+        document.getElementById('responseMessage').className = 'message error';
+      }
+    }
+
+    async function displayUserProfile() {
+      try {
+        const profile = await liff.getProfile();
+        const profileInfoDiv = document.getElementById('profileInfo');
+        document.getElementById('profilePicture').src = profile.pictureUrl;
+        document.getElementById('displayName').innerText = profile.displayName;
+        document.getElementById('statusMessage').innerText = profile.statusMessage || ''; // อาจไม่มี status message
+        profileInfoDiv.style.display = 'block'; // แสดงส่วนโปรไฟล์
+      } catch (err) {
+        console.error("Failed to get LIFF profile", err);
+        document.getElementById('responseMessage').innerText = 'ไม่สามารถดึงข้อมูลโปรไฟล์ LINE ได้: ' + err.message;
         document.getElementById('responseMessage').className = 'message error';
       }
     }
@@ -158,6 +210,7 @@
             userId = profile.userId;
           } catch (err) {
             console.error("Failed to get LIFF profile", err);
+            // ถ้าดึง userId ไม่ได้ ก็ส่งข้อมูลอื่นไป
           }
         }
 
@@ -166,21 +219,19 @@
           license: license,
           unit: unit,
           phone: phone,
-          userId: userId
+          userId: userId // ส่ง userId ไปยัง Google Sheet ด้วย
         };
 
         try {
           const response = await fetch(WEB_APP_URL, {
             method: 'POST',
-            mode: 'no-cors', // จำเป็นต้องใช้ no-cors สำหรับ Apps Script หากไม่มีการตั้งค่า CORS ที่ถูกต้อง
+            mode: 'no-cors',
             headers: {
               'Content-Type': 'application/x-www-form-urlencoded',
             },
             body: new URLSearchParams(formData).toString()
           });
 
-          // เนื่องจากใช้ 'no-cors' mode, เราไม่สามารถอ่าน response body ได้โดยตรง
-          // แต่ข้อมูลจะถูกส่งไปถึง Apps Script แล้ว
           responseMessage.innerText = 'ลงทะเบียนสำเร็จ! ขอบคุณครับ';
           responseMessage.className = 'message success';
           form.reset(); // ล้างฟอร์ม
