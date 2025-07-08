@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>ลงทะเบียนผู้ใช้งาน</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Kanit', sans-serif;
+      background-color: #e8f5e9; /* เขียวอ่อนมาก */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    .container {
+      background-color: #ffffff;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 500px;
+      box-sizing: border-box;
+    }
+    h2 {
+      text-align: center;
+      color: #2e7d32; /* เขียวเข้ม */
+      margin-bottom: 25px;
+      font-weight: 600;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #424242;
+      font-weight: 400;
+    }
+    input[type="text"],
+    input[type="tel"] {
+      width: calc(100% - 20px);
+      padding: 12px;
+      border: 1px solid #c8e6c9; /* เขียวอ่อน */
+      border-radius: 8px;
+      font-size: 16px;
+      box-sizing: border-box;
+      transition: border-color 0.3s ease;
+    }
+    input[type="text"]:focus,
+    input[type="tel"]:focus {
+      border-color: #4caf50; /* เขียว */
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+    }
+    .btn-submit {
+      width: 100%;
+      padding: 14px;
+      background-color: #4caf50; /* เขียว */
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 18px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.3s ease, transform 0.2s ease;
+    }
+    .btn-submit:hover {
+      background-color: #388e3c; /* เขียวเข้มขึ้น */
+      transform: translateY(-2px);
+    }
+    .btn-submit:active {
+      transform: translateY(0);
+    }
+    .message {
+      text-align: center;
+      margin-top: 20px;
+      font-weight: 500;
+    }
+    .message.success {
+      color: #2e7d32; /* เขียวเข้ม */
+    }
+    .message.error {
+      color: #d32f2f; /* แดง */
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>ลงทะเบียนผู้ใช้งาน</h2>
+    <form id="registrationForm">
+      <div class="form-group">
+        <label for="name">ชื่อ-นามสกุล:</label>
+        <input type="text" id="name" name="name" required>
+      </div>
+      <div class="form-group">
+        <label for="license">เลขที่ใบอนุญาต (ถ้ามี):</label>
+        <input type="text" id="license" name="license">
+      </div>
+      <div class="form-group">
+        <label for="unit">หน่วยปฏิบัติการ:</label>
+        <input type="text" id="unit" name="unit" required>
+      </div>
+      <div class="form-group">
+        <label for="phone">เบอร์โทรศัพท์:</label>
+        <input type="tel" id="phone" name="phone" pattern="[0-9]{10}" placeholder="เช่น 08XXXXXXXX" required>
+      </div>
+      <button type="submit" class="btn-submit">ลงทะเบียน</button>
+      <div class="message" id="responseMessage"></div>
+    </form>
+  </div>
+
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script>
+    // *** สำคัญ: แทนที่ด้วย Web App URL จาก Google Apps Script ของคุณ ***
+    const WEB_APP_URL = 'YOUR_WEB_APP_URL_FROM_APPS_SCRIPT';
+    // *** สำคัญ: แทนที่ด้วย LIFF ID ที่คุณจะได้จาก LINE Developers Console ***
+    const LIFF_ID = 'YOUR_LIFF_ID';
+
+    async function initializeLiff() {
+      try {
+        await liff.init({ liffId: LIFF_ID });
+        if (!liff.isLoggedIn()) {
+          liff.login();
+        }
+      } catch (err) {
+        console.error("LIFF initialization failed", err);
+        document.getElementById('responseMessage').innerText = 'เกิดข้อผิดพลาดในการโหลด LIFF: ' + err.message;
+        document.getElementById('responseMessage').className = 'message error';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initializeLiff();
+
+      const form = document.getElementById('registrationForm');
+      const responseMessage = document.getElementById('responseMessage');
+
+      form.addEventListener('submit', async function(event) {
+        event.preventDefault();
+
+        responseMessage.innerText = 'กำลังส่งข้อมูล...';
+        responseMessage.className = 'message';
+
+        const name = document.getElementById('name').value;
+        const license = document.getElementById('license').value;
+        const unit = document.getElementById('unit').value;
+        const phone = document.getElementById('phone').value;
+        let userId = '';
+
+        if (liff.isLoggedIn()) {
+          try {
+            const profile = await liff.getProfile();
+            userId = profile.userId;
+          } catch (err) {
+            console.error("Failed to get LIFF profile", err);
+          }
+        }
+
+        const formData = {
+          name: name,
+          license: license,
+          unit: unit,
+          phone: phone,
+          userId: userId
+        };
+
+        try {
+          const response = await fetch(WEB_APP_URL, {
+            method: 'POST',
+            mode: 'no-cors', // จำเป็นต้องใช้ no-cors สำหรับ Apps Script หากไม่มีการตั้งค่า CORS ที่ถูกต้อง
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams(formData).toString()
+          });
+
+          // เนื่องจากใช้ 'no-cors' mode, เราไม่สามารถอ่าน response body ได้โดยตรง
+          // แต่ข้อมูลจะถูกส่งไปถึง Apps Script แล้ว
+          responseMessage.innerText = 'ลงทะเบียนสำเร็จ! ขอบคุณครับ';
+          responseMessage.className = 'message success';
+          form.reset(); // ล้างฟอร์ม
+
+        } catch (error) {
+          console.error('Error submitting form:', error);
+          responseMessage.innerText = 'เกิดข้อผิดพลาดในการส่งข้อมูล: ' + error.message;
+          responseMessage.className = 'message error';
+        }
+      });
+    });
+  </script>
+</body>
+</html>
