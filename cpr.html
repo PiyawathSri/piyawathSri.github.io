@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPR Recorder - M-EMS CPR APP </title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5; /* Light gray background */
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align to top for better scrolling on small screens */
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 900px; /* Max width for desktop */
+            padding: 25px;
+            display: grid;
+            gap: 25px;
+            grid-template-columns: 1fr; /* Single column for mobile */
+        }
+        @media (min-width: 768px) { /* Two columns for tablet and desktop */
+            .container {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        .section {
+            background-color: #f9fafb;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: inset /* Shadow for inner sections */ 0 1px 3px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e5e7eb; /* Light border */
+        }
+        .btn {
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-weight: 600;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow for buttons */
+            cursor: pointer;
+            text-align: center;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn:hover {
+            transform: translateY(-2px); /* Lift effect on hover */
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15); /* Enhanced shadow on hover */
+        }
+        .btn-primary {
+            background-color: #3b82f6; /* Blue */
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #2563eb;
+        }
+        .btn-success {
+            background-color: #22c55e; /* Green */
+            color: white;
+        }
+        .btn-success:hover {
+            background-color: #16a34a;
+        }
+        .btn-danger {
+            background-color: #ef4444; /* Red */
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #dc2626;
+        }
+        .btn-secondary {
+            background-color: #6b7280; /* Gray */
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: #4b5563;
+        }
+        .btn-warning {
+            background-color: #f59e0b; /* Amber */
+            color: white;
+        }
+        .btn-warning:hover {
+            background-color: #d97706;
+        }
+        .btn-outline {
+            background-color: white;
+            color: #3b82f6;
+            border: 2px solid #3b82f6;
+        }
+        .btn-outline:hover {
+            background-color: #eff6ff;
+        }
+        .input-field {
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid #d1d5db;
+            width: 100%;
+            box-sizing: border-box;
+            background-color: white;
+        }
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            transform: translateY(-20px);
+            transition: transform 0.3s ease;
+        }
+        .modal.show .modal-content {
+            transform: translateY(0);
+        }
+        .alert-message {
+            font-size: 1.25rem; /* text-xl */
+            font-weight: 600; /* font-semibold */
+            margin-bottom: 20px;
+            color: #1f2937; /* Gray-800 */
+        }
+        .alert-button {
+            background-color: #3b82f6;
+            color: white;
+            padding: 10px 25px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        .alert-button:hover {
+            background-color: #2563eb;
+        }
+        .grid-cols-2-auto {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        @media (min-width: 640px) {
+            .grid-cols-sm-3 {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+        @media (min-width: 768px) {
+            .grid-cols-md-4 {
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Modal for General Alerts -->
+        <div id="alertModal" class="modal">
+            <div class="modal-content">
+                <p id="alertMessage" class="alert-message"></p>
+                <button id="alertCloseBtn" class="alert-button">ตกลง</button>
+            </div>
+        </div>
+
+        <!-- Modal for ECG Rhythm Input -->
+        <div id="ecgRhythmModal" class="modal">
+            <div class="modal-content">
+                <h3 class="text-xl font-semibold mb-4 text-gray-800">ระบุ ECG Rhythm</h3>
+                <!-- Changed to select dropdown -->
+                <select id="ecgRhythmInput" class="input-field mb-4">
+                    <option value="">เลือกรีธึม</option>
+                    <option value="VF">VF</option>
+                    <option value="VT">VT</option>
+                    <option value="Asystole/PEA">Asystole/PEA</option>
+                </select>
+                <button id="saveEcgRhythmBtn" class="btn btn-primary w-full">บันทึก Rhythm</button>
+            </div>
+        </div>
+
+        <!-- Left Column -->
+        <div class="col-span-1 space-y-6">
+            <!-- CPR Timer Section -->
+            <div class="section">
+                <h2 class="text-2xl font-bold mb-4 text-gray-800">ตัวจับเวลา CPR</h2>
+                <div class="text-5xl font-extrabold text-center text-blue-600 mb-6" id="cprTimer">00:00:00</div>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <button id="startCprBtn" class="btn btn-primary flex-1">เริ่ม CPR</button>
+                    <button id="pauseCprBtn" class="btn btn-secondary flex-1" disabled>หยุดชั่วคราว</button>
+                    <button id="resetCprBtn" class="btn btn-danger flex-1" disabled>รีเซ็ต</button>
+                </div>
+            </div>
+
+            <!-- Pulse Check Timer Section -->
+            <div class="section">
+                <h2 class="text-2xl font-bold mb-4 text-gray-800">เวลาประเมินชีพจร</h2>
+                <div class="text-4xl font-bold text-center text-green-600 mb-6" id="pulseCheckTimer">02:00</div>
+                <div class="flex justify-center">
+                    <button id="pulseCheckedBtn" class="btn btn-success w-full">ประเมินชีพจรแล้ว</button>
+                </div>
+            </div>
+
+            <!-- Patient Info Section -->
+            <div class="section">
+                <h2 class="text-2xl font-bold mb-4 text-gray-800">ข้อมูลผู้ป่วย</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label for="patientAge" class="block text-gray-700 text-sm font-semibold mb-1">อายุ (ปี):</label>
+                        <input type="number" id="patientAge" class="input-field" placeholder="เช่น 60">
+                    </div>
+                    <div>
+                        <label for="patientGender" class="block text-gray-700 text-sm font-semibold mb-1">เพศ:</label>
+                        <select id="patientGender" class="input-field">
+                            <option value="">เลือกเพศ</option>
+                            <option value="male">ชาย</option>
+                            <option value="female">หญิง</option>
+                            <option value="other">อื่นๆ</option>
+                        </select>
+                    </div>
+                    <!-- Moved "โรคประจำตัว" here -->
+                    <div>
+                        <label for="underlyingDisease" class="block text-gray-700 text-sm font-semibold mb-1">โรคประจำตัว:</label>
+                        <textarea id="underlyingDisease" class="input-field h-24 resize-y" placeholder="เช่น DM, HT, CKD"></textarea>
+                    </div>
+                    <div>
+                        <label for="initialRhythm" class="block text-gray-700 text-sm font-semibold mb-1">Initial Rhythm:</label>
+                        <!-- Changed to select dropdown for Initial Rhythm -->
+                        <select id="initialRhythm" class="input-field">
+                            <option value="">เลือกรีธึมเริ่มต้น</option>
+                            <option value="VF">VF (Ventricular Fibrillation)</option>
+                            <option value="Pulseless VT">Pulseless VT (Ventricular Tachycardia)</option>
+                            <option value="Asystole">Asystole</option>
+                            <option value="PEA">PEA (Pulseless Electrical Activity)</option>
+                            <option value="Sinus Rhythm">Sinus Rhythm</option>
+                            <option value="Bradycardia">Bradycardia</option>
+                            <option value="Tachycardia">Tachycardia</option>
+                            <option value="Other">อื่นๆ</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="notes" class="block text-gray-700 text-sm font-semibold mb-1">บันทึกเพิ่มเติม:</label>
+                        <textarea id="notes" class="input-field h-24 resize-y" placeholder="บันทึกเหตุการณ์สำคัญหรือข้อสังเกต"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="col-span-1 space-y-6">
+            <!-- Drug Administration Section -->
+            <div class="section">
+                <h2 class="text-2xl font-bold mb-4 text-gray-800">การบริหารยา</h2>
+                <div class="grid grid-cols-2-auto sm:grid-cols-sm-3 md:grid-cols-md-4 gap-4 mb-6">
+                    <button id="giveAdrenalineBtn" class="btn btn-warning">Adrenaline</button>
+                    <button id="giveAmiodaroneBtn" class="btn btn-warning">Amiodarone</button>
+                    <button id="giveLidocaineBtn" class="btn btn-warning">Lidocaine</button>
+                    <button id="giveSodiumBicarbBtn" class="btn btn-warning">Sodium Bicarb</button>
+                    <button id="giveCalciumBtn" class="btn btn-warning">Calcium</button>
+                    <button id="giveMagnesiumBtn" class="btn btn-warning">Magnesium</button>
+                    <button id="giveGlucoseBtn" class="btn btn-warning">50% Glucose</button> <!-- New button for 50% Glucose -->
+                    <!-- Add more drug buttons as needed -->
+                </div>
+                <h3 class="text-xl font-semibold mb-3 text-gray-700">ประวัติการให้ยา:</h3>
+                <ul id="drugHistoryList" class="list-disc pl-5 text-gray-600 space-y-2">
+                    <!-- Drug history will be dynamically added here -->
+                </ul>
+            </div>
+
+            <!-- Event Logging Section -->
+            <div class="section">
+                <h2 class="text-2xl font-bold mb-4 text-gray-800">บันทึกเหตุการณ์</h2>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <label class="block text-gray-700 text-sm font-semibold">จำนวนครั้งที่ช็อกไฟฟ้า:</label>
+                        <span id="defibShockCountDisplay" class="text-3xl font-bold text-red-600">0</span>
+                    </div>
+                    <div>
+                        <label for="defibEnergy" class="block text-gray-700 text-sm font-semibold mb-1">พลังงานที่ใช้ (J):</label>
+                        <input type="number" id="defibEnergy" class="input-field" placeholder="เช่น 200, 360">
+                    </div>
+                    <!-- Changed button style to btn-danger for prominence -->
+                    <button id="logDefibBtn" class="btn btn-danger w-full">บันทึกการช็อกไฟฟ้า</button>
+                </div>
+
+                <!-- New Airway Management Section -->
+                <h3 class="text-xl font-semibold mt-6 mb-3 text-gray-700">การดูแลทางเดินหายใจ:</h3>
+                <div class="space-y-4 mb-6">
+                    <div>
+                        <label for="airwayType" class="block text-gray-700 text-sm font-semibold mb-1">ชนิดการดูแลทางเดินหายใจ:</label>
+                        <input type="text" id="airwayType" class="input-field" placeholder="เช่น ET tube, LMA, OPA">
+                    </div>
+                    <button id="logAirwayBtn" class="btn btn-primary w-full">บันทึกการดูแลทางเดินหายใจ</button>
+                </div>
+
+                <h3 class="text-xl font-semibold mt-6 mb-3 text-gray-700">Cause of Arrest:</h3>
+                <div class="grid grid-cols-2 gap-3 mb-6">
+                    <button class="btn btn-outline h-t-btn" data-type="Hypoxia">Hypoxia</button>
+                    <button class="btn btn-outline h-t-btn" data-type="Hypovolemia">Hypovolemia</button>
+                    <button class="btn btn-outline h-t-btn" data-type="Hypo/Hyperkalemia">Hypo/Hyperkalemia</button>
+                    <button class="btn btn-outline h-t-btn" data-type="Hypothermia">Hypothermia</button>
+                    <button class="btn btn-outline h-t-btn" data-type="Tension Pneumothorax">Tension Pneumothorax</button>
+                    <button class="btn btn-outline h-t-btn" data-type="Tamponade">Tamponade</button>
+                    <button class="btn btn-outline h-t-btn" data-type="Toxins">Toxins</button>
+                    <button class="btn btn-outline h-t-btn" data-type="Thrombosis (Pulmonary/Coronary)">Thrombosis</button>
+                </div>
+                <h3 class="text-xl font-semibold mb-3 text-gray-700">ผลลัพธ์หลัก:</h3>
+                <div class="grid grid-cols-2 gap-3">
+                    <button id="logROSCBtn" class="btn btn-success">ROSC (มีชีพจรกลับมา)</button>
+                    <button id="logDeathBtn" class="btn btn-danger">เสียชีวิต</button>
+                </div>
+            </div>
+
+            <!-- Summary and Export Section -->
+            <div class="section">
+                <h2 class="text-2xl font-bold mb-4 text-gray-800">สรุปและส่งออกข้อมูล</h2>
+                <div class="flex flex-col gap-4">
+                    <button id="generateSummaryBtn" class="btn btn-primary">สร้างสรุป</button>
+                    <button id="exportDataBtn" class="btn btn-secondary">พิมพ์สรุป (Print Summary)</button>
+                </div>
+                <div id="summaryOutput" class="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 whitespace-pre-wrap hidden">
+                    <!-- Summary will be displayed here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Global Variables ---
+        let cprStartTime = 0;
+        let cprElapsedTime = 0; // in milliseconds
+        let cprTimerInterval;
+        let isCprRunning = false;
+
+        let pulseCheckIntervalTime = 2 * 60 * 1000; // 2 minutes in milliseconds
+        let nextPulseCheckDue = 0;
+        let pulseCheckTimerInterval;
+
+        let defibShockCount = 0; // New variable for defibrillation shock count
+
+        const drugHistory = [];
+        const eventLog = []; // To store pulse checks, defibs, H's & T's, outcomes
+
+        // Audio for alerts
+        // Removed the Audio object as it was causing NotSupportedError in the environment.
+        // const alertSound = new Audio('data:audio/wav;base64,UklGRl9QDwBXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgCWGFjdGEAAACgDwAAAIgDAABuZwAAAGcAAABuZwAAAGcAAABuZwAAAGcAAABuZwAAAGcAAABuZwAAAGcAAABuZwAAAGcAAABuZwAAAGcAAABuZwAAAGcAAABuZwAAAGcAAABuZwAAAGcAAABuZwAAAGcAAABuZwAAAGcAAABuZwAAAGcAAABuZwAAAGcAAABuZwAAAGcAAABuZwAAAGcAAABuZwAAAGcAAABuZw==');
+        // alertSound.volume = 0.5; // Set volume to 50%
+
+        // --- DOM Elements ---
+        const cprTimerDisplay = document.getElementById('cprTimer');
+        const startCprBtn = document.getElementById('startCprBtn');
+        const pauseCprBtn = document.getElementById('pauseCprBtn');
+        const resetCprBtn = document.getElementById('resetCprBtn');
+
+        const pulseCheckTimerDisplay = document.getElementById('pulseCheckTimer');
+        const pulseCheckedBtn = document.getElementById('pulseCheckedBtn');
+
+        const drugButtons = document.querySelectorAll('.section:nth-child(2) .btn-warning'); // Selects drug buttons
+        const drugHistoryList = document.getElementById('drugHistoryList');
+
+        const defibShockCountDisplay = document.getElementById('defibShockCountDisplay'); // New DOM element for display
+        const defibEnergyInput = document.getElementById('defibEnergy');
+        const logDefibBtn = document.getElementById('logDefibBtn'); // This button now increments the count
+
+        const airwayTypeInput = document.getElementById('airwayType'); // New DOM element for airway type
+        const logAirwayBtn = document.getElementById('logAirwayBtn'); // New DOM element for airway log button
+
+        const hTButtons = document.querySelectorAll('.h-t-btn');
+        const logROSCBtn = document.getElementById('logROSCBtn');
+        const logDeathBtn = document.getElementById('logDeathBtn');
+
+        const patientAgeInput = document.getElementById('patientAge');
+        const patientGenderSelect = document.getElementById('patientGender');
+        const underlyingDiseaseInput = document.getElementById('underlyingDisease'); // Existing DOM element, now moved
+        const initialRhythmSelect = document.getElementById('initialRhythm'); // Changed to select element
+        const notesInput = document.getElementById('notes');
+
+        const generateSummaryBtn = document.getElementById('generateSummaryBtn');
+        const exportDataBtn = document.getElementById('exportDataBtn');
+        const summaryOutput = document.getElementById('summaryOutput');
+
+        const alertModal = document.getElementById('alertModal');
+        const alertMessage = document.getElementById('alertMessage');
+        const alertCloseBtn = document.getElementById('alertCloseBtn');
+
+        // New DOM elements for ECG Rhythm Modal
+        const ecgRhythmModal = document.getElementById('ecgRhythmModal');
+        const ecgRhythmSelect = document.getElementById('ecgRhythmInput'); // Changed to select element
+        const saveEcgRhythmBtn = document.getElementById('saveEcgRhythmBtn');
+
+        // --- Helper Functions ---
+
+        /**
+         * Formats milliseconds into HH:MM:SS string.
+         * @param {number} ms - Milliseconds.
+         * @returns {string} Formatted time string.
+         */
+        function formatTime(ms) {
+            const totalSeconds = Math.floor(ms / 1000);
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+
+            return [hours, minutes, seconds]
+                .map(unit => String(unit).padStart(2, '0'))
+                .join(':');
+        }
+
+        /**
+         * Formats milliseconds into MM:SS string.
+         * @param {number} ms - Milliseconds.
+         * @returns {string} Formatted time string.
+         */
+        function formatMinutesSeconds(ms) {
+            const totalSeconds = Math.floor(ms / 1000);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+
+            return [minutes, seconds]
+                .map(unit => String(unit).padStart(2, '0'))
+                .join(':');
+        }
+
+        /**
+         * Get current time in HH:MM:SS format.
+         * @returns {string} Current time string.
+         */
+        function getCurrentTime() {
+            const now = new Date();
+            return now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+
+        /**
+         * Shows a custom alert modal.
+         * @param {string} message - Message to display.
+         */
+        function showAlert(message) {
+            alertMessage.textContent = message;
+            alertModal.classList.add('show');
+            // Removed the audio play call to fix NotSupportedError.
+            // alertSound.play(); // Play alert sound
+        }
+
+        /**
+         * Hides the custom alert modal.
+         */
+        function hideAlert() {
+            alertModal.classList.remove('show');
+        }
+
+        /**
+         * Shows the ECG Rhythm input modal.
+         */
+        function showEcgRhythmInputModal() {
+            ecgRhythmModal.classList.add('show');
+            ecgRhythmSelect.focus(); // Focus on the select field
+        }
+
+        /**
+         * Hides the ECG Rhythm input modal.
+         */
+        function hideEcgRhythmInputModal() {
+            ecgRhythmModal.classList.remove('show');
+            ecgRhythmSelect.value = ''; // Clear selected value
+        }
+
+        // --- CPR Timer Logic ---
+
+        /**
+         * Updates the CPR timer display.
+         */
+        function updateCprTimer() {
+            const now = Date.now();
+            cprElapsedTime = now - cprStartTime;
+            cprTimerDisplay.textContent = formatTime(cprElapsedTime);
+        }
+
+        /**
+         * Starts the CPR timer.
+         */
+        function startCpr() {
+            if (isCprRunning) return;
+            isCprRunning = true;
+            cprStartTime = Date.now() - cprElapsedTime; // Adjust start time if resuming from pause
+            cprTimerInterval = setInterval(updateCprTimer, 1000);
+            startPulseCheckTimer();
+
+            startCprBtn.disabled = true;
+            pauseCprBtn.disabled = false;
+            resetCprBtn.disabled = false;
+
+            logEvent('CPR Started');
+        }
+
+        /**
+         * Pauses the CPR timer.
+         */
+        function pauseCpr() {
+            if (!isCprRunning) return;
+            isCprRunning = false;
+            clearInterval(cprTimerInterval);
+            clearInterval(pulseCheckTimerInterval); // Pause pulse check timer too
+
+            startCprBtn.disabled = false;
+            pauseCprBtn.disabled = true;
+
+            logEvent('CPR Paused');
+        }
+
+        /**
+         * Resets the CPR timer and all related data.
+         */
+        function resetCpr() {
+            if (!confirm('คุณแน่ใจหรือไม่ที่ต้องการรีเซ็ตข้อมูล CPR ทั้งหมด?')) { // Using confirm for full reset, as it's a critical action
+                return;
+            }
+
+            pauseCpr(); // Pause if running
+            cprElapsedTime = 0;
+            cprTimerDisplay.textContent = '00:00:00';
+            isCprRunning = false;
+
+            // Reset pulse check timer
+            clearInterval(pulseCheckIntervalTime);
+            nextPulseCheckDue = 0;
+            pulseCheckTimerDisplay.textContent = '02:00';
+            pulseCheckedBtn.disabled = false; // Enable pulse check button after reset
+
+            // Reset defibrillation count
+            defibShockCount = 0;
+            defibShockCountDisplay.textContent = '0';
+
+            // Clear drug history
+            drugHistory.length = 0;
+            drugHistoryList.innerHTML = '';
+
+            // Clear event log
+            eventLog.length = 0;
+
+            // Clear patient info
+            patientAgeInput.value = '';
+            patientGenderSelect.value = '';
+            underlyingDiseaseInput.value = ''; // Clear underlying disease input
+            initialRhythmSelect.value = ''; // Clear selected value for Initial Rhythm
+            notesInput.value = '';
+            defibEnergyInput.value = ''; // Clear energy input
+            ecgRhythmSelect.value = ''; // Clear ECG rhythm selected value
+            airwayTypeInput.value = ''; // Clear airway type input
+
+            // Hide summary output
+            summaryOutput.classList.add('hidden');
+            summaryOutput.textContent = '';
+
+            // Reset button states
+            startCprBtn.disabled = false;
+            pauseCprBtn.disabled = true;
+            resetCprBtn.disabled = true;
+
+            showAlert('ข้อมูล CPR ถูกรีเซ็ตแล้ว');
+        }
+
+        // --- Pulse Check Logic ---
+
+        /**
+         * Starts or resumes the pulse check timer.
+         */
+        function startPulseCheckTimer() {
+            if (!isCprRunning) return; // Only run if CPR is active
+            clearInterval(pulseCheckTimerInterval); // Clear any existing timer
+
+            // Set the next pulse check time based on current CPR elapsed time
+            // If CPR just started, it's 2 mins from now.
+            // If resuming, it's 2 mins from the last check or current time + 2 mins if no checks yet.
+            if (nextPulseCheckDue === 0 || nextPulseCheckDue <= Date.now()) {
+                nextPulseCheckDue = Date.now() + pulseCheckIntervalTime;
+            }
+
+            pulseCheckTimerInterval = setInterval(updatePulseCheckTimer, 1000);
+        }
+
+        /**
+         * Updates the pulse check timer display and triggers alerts.
+         */
+        function updatePulseCheckTimer() {
+            const timeLeft = nextPulseCheckDue - Date.now();
+
+            if (timeLeft <= 0) {
+                pulseCheckTimerDisplay.textContent = '00:00';
+                showAlert('ถึงเวลาประเมินชีพจรแล้ว!');
+                clearInterval(pulseCheckTimerInterval);
+                pulseCheckedBtn.disabled = false; // Re-enable button after alert
+            } else {
+                pulseCheckTimerDisplay.textContent = formatMinutesSeconds(timeLeft);
+                if (timeLeft <= 30 * 1000 && timeLeft > 29 * 1000) { // Alert at 30 seconds
+                    showAlert('เหลือ 30 วินาทีถึงเวลาประเมินชีพจร!');
+                }
+            }
+        }
+
+        /**
+         * Handles the "Pulse Checked" button click.
+         */
+        function handlePulseChecked() {
+            const currentTime = getCurrentTime();
+            eventLog.push({ type: 'Pulse Check', time: currentTime, cprTime: formatTime(cprElapsedTime) });
+            showAlert(`ประเมินชีพจรแล้ว ณ ${currentTime} (เวลา CPR: ${formatTime(cprElapsedTime)})`);
+            
+            // Show ECG Rhythm input modal
+            showEcgRhythmInputModal();
+
+            pulseCheckedBtn.disabled = true; // Disable until next interval
+            // Reset and restart the pulse check timer for the next 2-minute cycle
+            nextPulseCheckDue = Date.now() + pulseCheckIntervalTime;
+            startPulseCheckTimer();
+        }
+
+        /**
+         * Saves the entered ECG Rhythm.
+         */
+        function saveEcgRhythm() {
+            const rhythm = ecgRhythmSelect.value.trim(); // Get value from select
+            if (rhythm) {
+                logEvent(`ECG Rhythm: ${rhythm}`);
+                showAlert(`บันทึก ECG Rhythm: ${rhythm}`);
+            } else {
+                showAlert('โปรดระบุ ECG Rhythm');
+            }
+            hideEcgRhythmInputModal();
+        }
+
+        // --- Drug Administration Logic ---
+
+        /**
+         * Logs drug administration and sets next due time.
+         * @param {string} drugName - Name of the drug.
+         * @param {number} [nextDueMinutes] - Minutes until next dose is due.
+         */
+        function giveDrug(drugName, nextDueMinutes) {
+            const currentTime = getCurrentTime();
+            const cprTime = formatTime(cprElapsedTime);
+            const drugEntry = {
+                name: drugName,
+                time: currentTime,
+                cprTime: cprTime,
+                nextDue: null
+            };
+
+            if (nextDueMinutes) {
+                const nextDueMs = Date.now() + (nextDueMinutes * 60 * 1000);
+                drugEntry.nextDue = nextDueMs;
+                // Set up a specific timer for this drug's next dose alert
+                setTimeout(() => {
+                    showAlert(`ถึงเวลาให้ ${drugName} dose ต่อไปแล้ว!`);
+                }, nextDueMs - Date.now());
+            }
+
+            drugHistory.push(drugEntry);
+            renderDrugHistory();
+            showAlert(`ให้ยา ${drugName} แล้ว ณ ${currentTime}`);
+            logEvent(`ให้ยา ${drugName}`);
+        }
+
+        /**
+         * Renders the drug history list.
+         */
+        function renderDrugHistory() {
+            drugHistoryList.innerHTML = '';
+            drugHistory.forEach(drug => {
+                const li = document.createElement('li');
+                let text = `${drug.name} - ${drug.time} (เวลา CPR: ${drug.cprTime})`;
+                if (drug.nextDue) {
+                    const nextDueTime = new Date(drug.nextDue).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    text += ` (โดสต่อไปประมาณ ${nextDueTime})`;
+                }
+                li.textContent = text;
+                drugHistoryList.appendChild(li);
+            });
+        }
+
+        // --- Event Logging Logic ---
+
+        /**
+         * Logs a general event with current time and CPR time.
+         * @param {string} description - Description of the event.
+         */
+        function logEvent(description) {
+            const currentTime = getCurrentTime();
+            const cprTime = formatTime(cprElapsedTime);
+            eventLog.push({ type: 'Event', description: description, time: currentTime, cprTime: cprTime });
+            console.log(`[${currentTime} - CPR: ${cprTime}] ${description}`);
+        }
+
+        /**
+         * Handles logging of defibrillation.
+         */
+        function logDefibrillation() {
+            defibShockCount++; // Increment the count
+            defibShockCountDisplay.textContent = defibShockCount; // Update display
+
+            const energy = defibEnergyInput.value;
+            const description = `ช็อกไฟฟ้า ${defibShockCount} ครั้ง${energy ? ` (${energy} J)` : ''}`;
+            logEvent(`Defibrillation: ${description}`);
+            showAlert(`บันทึก: ${description}`);
+            defibEnergyInput.value = ''; // Clear energy input after logging
+        }
+
+        /**
+         * Handles logging of Airway Management.
+         */
+        function logAirwayManagement() {
+            const airwayType = airwayTypeInput.value.trim();
+            if (airwayType) {
+                logEvent(`การดูแลทางเดินหายใจ: ${airwayType}`);
+                showAlert(`บันทึก: การดูแลทางเดินหายใจ - ${airwayType}`);
+            } else {
+                showAlert('โปรดระบุชนิดการดูแลทางเดินหายใจ');
+            }
+            airwayTypeInput.value = ''; // Clear input after logging
+        }
+
+        /**
+         * Handles logging of H's & T's (Cause of Arrest).
+         * @param {Event} event - The click event.
+         */
+        function logHT(event) {
+            const type = event.target.dataset.type;
+            logEvent(`Cause of Arrest: ${type}`); // Updated log message
+            showAlert(`บันทึก: Cause of Arrest - ${type}`); // Updated alert message
+        }
+
+        /**
+         * Handles logging of ROSC.
+         */
+        function logROSC() {
+            logEvent('ROSC (Return of Spontaneous Circulation)');
+            showAlert('บันทึก: ROSC (มีชีพจรกลับมา)');
+            pauseCpr(); // Consider pausing CPR timer on ROSC
+        }
+
+        /**
+         * Handles logging of Death.
+         */
+        function logDeath() {
+            logEvent('เสียชีวิต');
+            showAlert('บันทึก: เสียชีวิต');
+            pauseCpr(); // Consider pausing CPR timer on Death
+        }
+
+        // --- Summary and Export Logic ---
+
+        /**
+         * Generates a comprehensive summary of the CPR event.
+         */
+        function generateSummary() {
+            const cprDate = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' }); // Get current date
+            let summaryText = `--- สรุปการทำ CPR ---\n`;
+            summaryText += `วันที่ CPR: ${cprDate}\n\n`; // Add CPR Date
+            summaryText += `เวลา CPR ทั้งหมด: ${formatTime(cprElapsedTime)}\n`;
+            summaryText += `จำนวนครั้งที่ช็อกไฟฟ้า: ${defibShockCount}\n\n`; // Include defibrillation count in summary
+
+            summaryText += `ข้อมูลผู้ป่วย:\n`;
+            summaryText += `  อายุ: ${patientAgeInput.value || 'ไม่ได้ระบุ'}\n`;
+            summaryText += `  เพศ: ${patientGenderSelect.value || 'ไม่ได้ระบุ'}\n`;
+            summaryText += `  โรคประจำตัว: ${underlyingDiseaseInput.value || 'ไม่ได้ระบุ'}\n`; // Include underlying disease
+            summaryText += `  Initial Rhythm: ${initialRhythmSelect.value || 'ไม่ได้ระบุ'}\n`; // Get value from select
+            summaryText += `  บันทึกเพิ่มเติม: ${notesInput.value || 'ไม่มี'}\n\n`;
+
+            summaryText += `ประวัติการให้ยา:\n`;
+            if (drugHistory.length === 0) {
+                summaryText += `  ไม่มีการให้ยา\n`;
+            } else {
+                drugHistory.forEach(drug => {
+                    let drugInfo = `  - ${drug.name} ณ ${drug.time} (เวลา CPR: ${drug.cprTime})`;
+                    if (drug.nextDue) {
+                        const nextDueTime = new Date(drug.nextDue).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                        drugInfo += ` (โดสต่อไปประมาณ ${nextDueTime})`;
+                    }
+                    summaryText += `${drugInfo}\n`;
+                });
+            }
+            summaryText += '\n';
+
+            summaryText += `บันทึกเหตุการณ์สำคัญ:\n`;
+            if (eventLog.length === 0) {
+                summaryText += `  ไม่มีเหตุการณ์บันทึก\n`;
+            } else {
+                eventLog.forEach(event => {
+                    summaryText += `  - [${event.time} - CPR: ${event.cprTime}] ${event.description}\n`;
+                });
+            }
+            summaryText += '\n--- สิ้นสุดสรุป ---';
+
+            // Change from textContent to innerHTML and replace newlines with <br>
+            summaryOutput.innerHTML = summaryText.replace(/\n/g, '<br>');
+            summaryOutput.classList.remove('hidden');
+        }
+
+        /**
+         * Prints the generated summary.
+         */
+        function exportData() {
+            if (summaryOutput.textContent.trim() === '') {
+                generateSummary(); // Generate summary if not already generated
+            }
+
+            const printContent = summaryOutput.innerHTML;
+            const originalTitle = document.title;
+            const printWindow = window.open('', '_blank');
+            
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <title>${originalTitle} - สรุป CPR</title>
+                    <style>
+                        body {
+                            font-family: 'Inter', sans-serif;
+                            margin: 20mm; /* Add some margin for printing */
+                            font-size: 12pt;
+                            line-height: 1.5;
+                            color: #333;
+                        }
+                        h1, h2, h3 {
+                            color: #1f2937;
+                            margin-bottom: 10px;
+                        }
+                        ul {
+                            list-style: disc;
+                            padding-left: 20px;
+                        }
+                        /* Optional: Add print-specific styles for better layout */
+                        @media print {
+                            body {
+                                margin: 0;
+                                padding: 0;
+                            }
+                            .no-print {
+                                display: none !important;
+                            }
+                        }
+                    </style>
+                </head>
+                <body>
+                    ${printContent}
+                </body>
+                </html>
+            `);
+            printWindow.document.close(); // Close the document to ensure content is loaded
+
+            // Wait for the content to render before printing
+            printWindow.onload = function() {
+                printWindow.focus(); // Focus on the new window
+                printWindow.print(); // Open the print dialog
+                // Optional: Close the window after printing (user might want to keep it open)
+                // printWindow.onafterprint = function() {
+                //     printWindow.close();
+                // };
+            };
+
+            showAlert('กำลังเตรียมพิมพ์สรุป...');
+        }
+
+        // --- Event Listeners ---
+        startCprBtn.addEventListener('click', startCpr);
+        pauseCprBtn.addEventListener('click', pauseCpr);
+        resetCprBtn.addEventListener('click', resetCpr);
+
+        pulseCheckedBtn.addEventListener('click', handlePulseChecked);
+        saveEcgRhythmBtn.addEventListener('click', saveEcgRhythm); // Listener for the new ECG modal button
+
+        // Drug buttons
+        document.getElementById('giveAdrenalineBtn').addEventListener('click', () => giveDrug('Adrenaline', 3)); // Adrenaline every 3-5 mins, use 3 for alert
+        document.getElementById('giveAmiodaroneBtn').addEventListener('click', () => giveDrug('Amiodarone'));
+        document.getElementById('giveLidocaineBtn').addEventListener('click', () => giveDrug('Lidocaine'));
+        document.getElementById('giveSodiumBicarbBtn').addEventListener('click', () => giveDrug('Sodium Bicarb'));
+        document.getElementById('giveCalciumBtn').addEventListener('click', () => giveDrug('Calcium'));
+        document.getElementById('giveMagnesiumBtn').addEventListener('click', () => giveDrug('Magnesium'));
+        document.getElementById('giveGlucoseBtn').addEventListener('click', () => giveDrug('50% Glucose')); // Event listener for 50% Glucose
+
+        logDefibBtn.addEventListener('click', logDefibrillation); // This button now increments the count
+        logAirwayBtn.addEventListener('click', logAirwayManagement); // Listener for airway management button
+
+        hTButtons.forEach(button => {
+            button.addEventListener('click', logHT);
+        });
+
+        logROSCBtn.addEventListener('click', logROSC);
+        logDeathBtn.addEventListener('click', logDeath);
+
+        generateSummaryBtn.addEventListener('click', generateSummary);
+        exportDataBtn.addEventListener('click', exportData);
+
+        alertCloseBtn.addEventListener('click', hideAlert);
+
+        // Initial state setup
+        window.onload = function() {
+            resetCprBtn.disabled = true; // Initially disable reset
+            pauseCprBtn.disabled = true; // Initially disable pause
+            pulseCheckedBtn.disabled = true; // Disable pulse check until CPR starts
+        };
+
+    </script>
+</body>
+</html>
