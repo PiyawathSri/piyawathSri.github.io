@@ -107,6 +107,7 @@
       text-align: center;
       margin-top: 20px;
       font-weight: 500;
+      display: none; /* Initially hide the message */
     }
     .message.success {
       color: #2e7d32; /* Dark green */
@@ -143,8 +144,8 @@
         <input type="tel" id="phone" name="phone" pattern="[0-9]{10}" placeholder="เช่น 08XXXXXXXX" required>
       </div>
       <button type="submit" class="btn-submit">ลงทะเบียน</button>
-      <div class="message" id="responseMessage"></div>
     </form>
+    <div class="message" id="responseMessage"></div> <!-- Moved outside the form -->
   </div>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -172,6 +173,7 @@
         console.error("LIFF initialization failed", err);
         document.getElementById('responseMessage').innerText = 'เกิดข้อผิดพลาดในการโหลด LIFF: ' + err.message;
         document.getElementById('responseMessage').className = 'message error';
+        document.getElementById('responseMessage').style.display = 'block'; // Show error message
       }
     }
 
@@ -190,6 +192,7 @@
         console.error("Failed to get LIFF profile", err);
         document.getElementById('responseMessage').innerText = 'ไม่สามารถดึงข้อมูลโปรไฟล์ LINE ได้: ' + err.message;
         document.getElementById('responseMessage').className = 'message error';
+        document.getElementById('responseMessage').style.display = 'block'; // Show error message
       }
     }
 
@@ -206,6 +209,7 @@
 
         responseMessage.innerText = 'กำลังส่งข้อมูล...';
         responseMessage.className = 'message';
+        responseMessage.style.display = 'block'; // Show "sending" message
 
         const name = document.getElementById('name').value;
         const license = document.getElementById('license').value;
@@ -244,9 +248,12 @@
             body: new URLSearchParams(formData).toString() // Encode data as URL-encoded string
           });
 
+          // Hide the form and show only the success message
+          form.style.display = 'none'; // Hide the form
+          document.getElementById('profileInfo').style.display = 'none'; // Also hide profile info
           responseMessage.innerText = 'ลงทะเบียนสำเร็จ! ขอบคุณครับ';
           responseMessage.className = 'message success';
-          form.reset(); // Clear the form
+          responseMessage.style.display = 'block'; // Ensure message is visible
 
           // Close the LIFF window after a short delay to allow the user to see the success message
           setTimeout(() => {
@@ -259,6 +266,7 @@
           console.error('Error submitting form:', error);
           responseMessage.innerText = 'เกิดข้อผิดพลาดในการส่งข้อมูล: ' + error.message;
           responseMessage.className = 'message error';
+          responseMessage.style.display = 'block'; // Ensure message is visible
         }
       });
     });
