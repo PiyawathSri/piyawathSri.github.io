@@ -251,7 +251,8 @@
           // Hide the form and show only the success message
           form.style.display = 'none'; // Hide the form
           document.getElementById('profileInfo').style.display = 'none'; // Also hide profile info
-          responseMessage.innerText = 'ลงทะเบียนสำเร็จ! ขอบคุณครับ';
+          // Changed message to include a line break and smaller font for "ขอบคุณครับ"
+          responseMessage.innerHTML = 'ลงทะเบียนผู้ใช้งานสำเร็จ<br><span style="font-size: 0.8em;">ขอบคุณครับ</span>';
           responseMessage.className = 'message success';
           responseMessage.style.display = 'block'; // Ensure message is visible
 
