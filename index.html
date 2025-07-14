@@ -196,7 +196,9 @@
         <label for="phone">เบอร์โทรศัพท์:</label>
         <input type="tel" id="phone" name="phone" pattern="[0-9]{10}" placeholder="เช่น 08XXXXXXXX" required>
       </div>
-      <button type="submit" class="btn-submit">ลงทะเบียน</button>
+      <div> <!-- Container for buttons -->
+        <button type="submit" id="submitOrUpdateButton" class="btn-submit">ลงทะเบียน</button>
+      </div>
     </form>
     <div class="message" id="responseMessage"></div>
   </div>
@@ -227,7 +229,7 @@
     const licenseInput = document.getElementById('license');
     const unitInput = document.getElementById('unit');
     const phoneInput = document.getElementById('phone');
-    const submitButton = document.querySelector('.btn-submit'); // Select the submit button
+    const submitOrUpdateButton = document.getElementById('submitOrUpdateButton'); // Renamed for clarity
 
     /**
      * Shows a custom alert modal.
@@ -259,7 +261,7 @@
           liff.login();
         } else {
           await displayUserProfile();
-          // The fetchUserData() call is removed here, as per the request to revert.
+          await fetchUserData(); // Call to fetch existing user data
         }
       } catch (err) {
         console.error("LIFF initialization failed", err);
@@ -284,7 +286,46 @@
       }
     }
 
-    // The fetchUserData function is removed entirely as per the request to revert.
+    /**
+     * Fetches existing user data from Google Apps Script and pre-fills the form.
+     */
+    async function fetchUserData() {
+      if (!liff.isLoggedIn()) return;
+
+      try {
+        const profile = await liff.getProfile();
+        const userId = profile.userId;
+
+        const response = await fetch(`${WEB_APP_URL}?userId=${userId}`, {
+          method: 'GET',
+          mode: 'cors'
+        });
+        const result = await response.json();
+        console.log('fetchUserData result:', result); // Log result for debugging
+
+        if (result.status === 'found') {
+          const userData = result.data;
+          nameInput.value = userData.name;
+          licenseInput.value = userData.license;
+          unitInput.value = userData.unit;
+          phoneInput.value = userData.phone;
+          // Change button text and heading to indicate update mode
+          submitOrUpdateButton.textContent = 'อัปเดทข้อมูลผู้ใช้งาน'; // Changed button text
+          document.querySelector('h2').textContent = 'ข้อมูลผู้ใช้งาน'; // Changed heading
+          showCustomAlert('พบข้อมูลผู้ใช้งานของคุณแล้ว<br><span style="font-size: 0.8em;">สามารถแก้ไขและกดปุ่มอัปเดทได้เลย</span>'); // Changed alert message
+        } else if (result.status === 'not_found') {
+          // User not registered, keep "ลงทะเบียน" button and heading
+          submitOrUpdateButton.textContent = 'ลงทะเบียน';
+          document.querySelector('h2').textContent = 'ลงทะเบียนผู้ใช้งาน';
+        } else {
+          console.error('Error fetching user data: Unexpected status', result.status, result.message);
+          showCustomAlert('เกิดข้อผิดพลาดในการดึงข้อมูลผู้ใช้งาน: ' + (result.message || 'Unknown status.'));
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        showCustomAlert('เกิดข้อผิดพลาดในการดึงข้อมูลผู้ใช้งาน: ' + error.message);
+      }
+    }
 
     // Event listener for form submission
     document.addEventListener('DOMContentLoaded', () => {
@@ -349,9 +390,22 @@
                   liff.closeWindow();
                 }
               }, 2000);
-            } else if (status === 'duplicate') {
+            } else if (status === 'updated') {
+              registrationForm.style.display = 'none';
+              document.getElementById('profileInfo').style.display = 'none';
               responseMessage.style.display = 'none';
-              showCustomAlert('คุณเคยลงทะเบียนผู้ใช้งานแล้ว<br><span style="font-size: 0.8em;">กรุณาใช้บัญชีไลน์อื่น</span>');
+              showCustomAlert('อัปเดทข้อมูลผู้ใช้งานสำเร็จ<br><span style="font-size: 0.8em;">ขอบคุณครับ</span>'); // Changed update success message
+              setTimeout(() => {
+                if (liff.isInClient()) {
+                  liff.closeWindow();
+                }
+              }, 2000);
+            } else if (status === 'duplicate') {
+              // This case should ideally not be hit if fetchUserData works correctly,
+              // as the Apps Script will now update instead of returning duplicate.
+              // However, keeping it as a fallback.
+              responseMessage.style.display = 'none';
+              showCustomAlert('คุณเคยลงทะเบียนผู้ใช้งานแล้วครับ<br><span style="font-size: 0.8em;">กรุณาใช้บัญชีไลน์อื่น</span>');
               // No window close for duplicate, user stays on the page
             } else {
               // Fallback for unexpected status values
