@@ -308,9 +308,9 @@
           unitInput.value = userData.unit;
           phoneInput.value = userData.phone;
           // Change button text and heading to indicate update mode
-          submitButton.textContent = 'บันทึกการแก้ไข';
-          document.querySelector('h2').textContent = 'แก้ไขข้อมูลผู้ใช้งาน';
-          showCustomAlert('พบข้อมูลของคุณแล้ว<br><span style="font-size: 0.8em;">อัปเดทข้อมูลผู้ใช้งาน</span>');
+          submitButton.textContent = 'อัปเดทข้อมูลผู้ใช้งาน'; // Changed button text
+          document.querySelector('h2').textContent = 'ข้อมูลผู้ใช้งาน'; // Changed heading
+          showCustomAlert('พบข้อมูลผู้ใช้งานของคุณแล้ว<br><span style="font-size: 0.8em;">แก้ไข/อัปเดทข้อมูลผู้ใช้</span>'); // Changed alert message
         } else if (result.status === 'not_found') {
           // User not registered, keep "ลงทะเบียน" button and heading
           submitButton.textContent = 'ลงทะเบียน';
@@ -392,7 +392,7 @@
               registrationForm.style.display = 'none';
               document.getElementById('profileInfo').style.display = 'none';
               responseMessage.style.display = 'none';
-              showCustomAlert('แก้ไขข้อมูลผู้ใช้งานสำเร็จ<br><span style="font-size: 0.8em;">ขอบคุณครับ</span>');
+              showCustomAlert('อัปเดทข้อมูลผู้ใช้งานสำเร็จ<br><span style="font-size: 0.8em;">ขอบคุณครับ</span>'); // Changed update success message
               setTimeout(() => {
                 if (liff.isInClient()) {
                   liff.closeWindow();
@@ -403,7 +403,7 @@
               // as the Apps Script will now update instead of returning duplicate.
               // However, keeping it as a fallback.
               responseMessage.style.display = 'none';
-              showCustomAlert('คุณได้ลงทะเบียนผู้ใช้งานนี้แล้ว<br><span style="font-size: 0.8em;">กรุณาใช้บัญชี LINE อื่น</span>');
+              showCustomAlert('คุณเคยลงทะเบียนใช้งานแล้วครับ<br><span style="font-size: 0.8em;">กรุณาใช้บัญชีไลน์อื่น</span>');
               // No window close for duplicate, user stays on the page
             } else {
               // Fallback for unexpected status values
