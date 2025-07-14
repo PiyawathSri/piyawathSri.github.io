@@ -212,7 +212,7 @@
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script>
     // *** IMPORTANT: Replace with your Web App URL from Google Apps Script ***
-    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzPvCIl7P5uMCRjMU-VSXN8PMKQOZE9CkPoio3B5QLNUTiip1yuC3H0zsc_zusMvJWrOw/exec'; // <<-- REPLACE THIS URL -->>
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyR8LOGjLYFPjtCeDPXiCxWYNtDOQR8fWG5e66dBA6RVf0z2TIw4A6tVesJxmBi2Pn5Sg/exec'; // <<-- REPLACE THIS URL -->>
     // *** IMPORTANT: Replace with your LIFF ID from LINE Developers Console ***
     const LIFF_ID = '2007717297-MzNV47AJ';
 
@@ -227,7 +227,8 @@
     const licenseInput = document.getElementById('license');
     const unitInput = document.getElementById('unit');
     const phoneInput = document.getElementById('phone');
-    const submitButton = document.querySelector('.btn-submit'); // Corrected selector to match class
+    // submitButton is now directly selected, no need for the variable if not changing text
+    // const submitButton = document.querySelector('.btn-submit'); 
 
     /**
      * Shows a custom alert modal.
@@ -249,7 +250,7 @@
     customAlertCloseBtn.addEventListener('click', hideCustomAlert);
 
     /**
-     * Initializes the LIFF SDK and handles user login and data fetching.
+     * Initializes the LIFF SDK and handles user login.
      */
     async function initializeLiff() {
       try {
@@ -259,7 +260,7 @@
           liff.login();
         } else {
           await displayUserProfile();
-          await fetchUserData(); // Attempt to fetch existing user data
+          // Removed fetchUserData() call here
         }
       } catch (err) {
         console.error("LIFF initialization failed", err);
@@ -284,46 +285,7 @@
       }
     }
 
-    /**
-     * Fetches existing user data from Google Apps Script and pre-fills the form.
-     */
-    async function fetchUserData() {
-      if (!liff.isLoggedIn()) return;
-
-      try {
-        const profile = await liff.getProfile();
-        const userId = profile.userId;
-
-        const response = await fetch(`${WEB_APP_URL}?userId=${userId}`, {
-          method: 'GET',
-          mode: 'cors'
-        });
-        const result = await response.json();
-        console.log('fetchUserData result:', result); // Log result for debugging
-
-        if (result.status === 'found') {
-          const userData = result.data;
-          nameInput.value = userData.name;
-          licenseInput.value = userData.license;
-          unitInput.value = userData.unit;
-          phoneInput.value = userData.phone;
-          // Change button text to indicate update mode
-          submitButton.textContent = 'บันทึกการแก้ไข'; // Use submitButton variable
-          document.querySelector('h2').textContent = 'แก้ไขข้อมูลผู้ใช้งาน';
-          showCustomAlert('พบข้อมูลของคุณแล้ว<br><span style="font-size: 0.8em;">สามารถแก้ไขและบันทึกได้เลย</span>');
-        } else if (result.status === 'not_found') {
-          // User not registered, keep "ลงทะเบียน" button
-          submitButton.textContent = 'ลงทะเบียน'; // Use submitButton variable
-          document.querySelector('h2').textContent = 'ลงทะเบียนผู้ใช้งาน';
-        } else {
-          console.error('Error fetching user data: Unexpected status', result.status, result.message);
-          showCustomAlert('เกิดข้อผิดพลาดในการดึงข้อมูลผู้ใช้งาน: ' + (result.message || 'Unknown status.'));
-        }
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-        showCustomAlert('เกิดข้อผิดพลาดในการดึงข้อมูลผู้ใช้งาน: ' + error.message);
-      }
-    }
+    // Removed fetchUserData function entirely
 
     // Event listener for form submission
     document.addEventListener('DOMContentLoaded', () => {
@@ -375,7 +337,6 @@
           const result = await response.json();
           console.log('Form submission result:', result); // Log result for debugging
 
-          // Check if result and result.status are valid strings before trimming
           if (typeof result === 'object' && result !== null && typeof result.status === 'string') {
             const status = result.status.trim(); // Trim whitespace from status
 
@@ -383,17 +344,7 @@
               registrationForm.style.display = 'none';
               document.getElementById('profileInfo').style.display = 'none';
               responseMessage.style.display = 'none';
-              showCustomAlert('ลงทะเบียนผู้ใช้งานสำเร็จ<br><span style="font-size: 0.8em;">ขอบคุณครับ</span>');
-              setTimeout(() => {
-                if (liff.isInClient()) {
-                  liff.closeWindow();
-                }
-              }, 2000);
-            } else if (status === 'updated') {
-              registrationForm.style.display = 'none';
-              document.getElementById('profileInfo').style.display = 'none';
-              responseMessage.style.display = 'none';
-              showCustomAlert('แก้ไขข้อมูลผู้ใช้งานสำเร็จ<br><span style="font-size: 0.8em;">ขอบคุณครับ</span>');
+              showCustomAlert('ลงทะเบียนผู้ใช้งานสำเร็จ!<br><span style="font-size: 0.8em;">ขอบคุณครับ</span>');
               setTimeout(() => {
                 if (liff.isInClient()) {
                   liff.closeWindow();
@@ -401,7 +352,8 @@
               }, 2000);
             } else if (status === 'duplicate') {
               responseMessage.style.display = 'none';
-              showCustomAlert('คุณได้ลงทะเบียนผู้ใช้งานนี้แล้ว<br><span style="font-size: 0.8em;">กรุณาใช้บัญชี LINE อื่น</span>');
+              showCustomAlert('คุณเคยลงทะเบียนผู้ใช้งานแล้ว<br><span style="font-size: 0.8em;">กรุณาใช้บัญชีไลน์อื่น</span>');
+              // No window close for duplicate, user stays on the page
             } else {
               // Fallback for unexpected status values
               console.error('Unexpected status from server:', result.status, result.message);
