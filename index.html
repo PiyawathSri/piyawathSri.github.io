@@ -227,8 +227,7 @@
     const licenseInput = document.getElementById('license');
     const unitInput = document.getElementById('unit');
     const phoneInput = document.getElementById('phone');
-    // submitButton is now directly selected, no need for the variable if not changing text
-    // const submitButton = document.querySelector('.btn-submit'); 
+    const submitButton = document.querySelector('.btn-submit'); // Select the submit button
 
     /**
      * Shows a custom alert modal.
@@ -250,7 +249,7 @@
     customAlertCloseBtn.addEventListener('click', hideCustomAlert);
 
     /**
-     * Initializes the LIFF SDK and handles user login.
+     * Initializes the LIFF SDK and handles user login and data fetching.
      */
     async function initializeLiff() {
       try {
@@ -260,7 +259,7 @@
           liff.login();
         } else {
           await displayUserProfile();
-          // Removed fetchUserData() call here
+          // The fetchUserData() call is removed here, as per the request to revert.
         }
       } catch (err) {
         console.error("LIFF initialization failed", err);
@@ -285,7 +284,7 @@
       }
     }
 
-    // Removed fetchUserData function entirely
+    // The fetchUserData function is removed entirely as per the request to revert.
 
     // Event listener for form submission
     document.addEventListener('DOMContentLoaded', () => {
