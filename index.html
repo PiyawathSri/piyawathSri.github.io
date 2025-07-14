@@ -168,6 +168,25 @@
     .modal-button:hover {
       background-color: #388e3c; /* Darker green */
     }
+    /* New style for secondary button */
+    .btn-secondary {
+      background-color: #6c757d; /* Grey */
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 18px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 14px;
+      transition: background-color 0.3s ease, transform 0.2s ease;
+    }
+    .btn-secondary:hover {
+      background-color: #5a6268;
+      transform: translateY(-2px);
+    }
+    .btn-secondary:active {
+      transform: translateY(0);
+    }
   </style>
 </head>
 <body>
@@ -196,7 +215,10 @@
         <label for="phone">เบอร์โทรศัพท์:</label>
         <input type="tel" id="phone" name="phone" pattern="[0-9]{10}" placeholder="เช่น 08XXXXXXXX" required>
       </div>
-      <button type="submit" class="btn-submit">ลงทะเบียน</button>
+      <div class="flex flex-col gap-4"> <!-- Container for buttons -->
+        <button type="submit" id="submitOrUpdateButton" class="btn-submit">ลงทะเบียน</button>
+        <button type="button" id="closeLiffButton" class="btn-secondary" style="display: none;">ตกลง (ปิดหน้าจอ)</button>
+      </div>
     </form>
     <div class="message" id="responseMessage"></div>
   </div>
@@ -227,7 +249,8 @@
     const licenseInput = document.getElementById('license');
     const unitInput = document.getElementById('unit');
     const phoneInput = document.getElementById('phone');
-    const submitButton = document.querySelector('.btn-submit'); // Select the submit button
+    const submitOrUpdateButton = document.getElementById('submitOrUpdateButton'); // Renamed for clarity
+    const closeLiffButton = document.getElementById('closeLiffButton'); // New button
 
     /**
      * Shows a custom alert modal.
@@ -308,13 +331,15 @@
           unitInput.value = userData.unit;
           phoneInput.value = userData.phone;
           // Change button text and heading to indicate update mode
-          submitButton.textContent = 'อัปเดทข้อมูลผู้ใช้งาน'; // Changed button text
+          submitOrUpdateButton.textContent = 'อัปเดทข้อมูลผู้ใช้งาน'; // Changed button text
           document.querySelector('h2').textContent = 'ข้อมูลผู้ใช้งาน'; // Changed heading
-          showCustomAlert('พบข้อมูลผู้ใช้งานของคุณแล้ว<br><span style="font-size: 0.8em;">แก้ไข/อัปเดทข้อมูลผู้ใช้</span>'); // Changed alert message
+          closeLiffButton.style.display = 'block'; // Show the "ตกลง (ปิดหน้าจอ)" button
+          showCustomAlert('พบข้อมูลผู้ใช้งานของคุณแล้ว<br><span style="font-size: 0.8em;">สามารถแก้ไขและกดปุ่มอัปเดทได้เลย หรือกด "ตกลง (ปิดหน้าจอ)" เพื่อกลับ</span>'); // Changed alert message
         } else if (result.status === 'not_found') {
           // User not registered, keep "ลงทะเบียน" button and heading
-          submitButton.textContent = 'ลงทะเบียน';
+          submitOrUpdateButton.textContent = 'ลงทะเบียน';
           document.querySelector('h2').textContent = 'ลงทะเบียนผู้ใช้งาน';
+          closeLiffButton.style.display = 'none'; // Ensure "ตกลง (ปิดหน้าจอ)" button is hidden
         } else {
           console.error('Error fetching user data: Unexpected status', result.status, result.message);
           showCustomAlert('เกิดข้อผิดพลาดในการดึงข้อมูลผู้ใช้งาน: ' + (result.message || 'Unknown status.'));
@@ -331,6 +356,15 @@
 
       const form = document.getElementById('registrationForm');
       const responseMessage = document.getElementById('responseMessage');
+
+      // Event listener for the new "ตกลง (ปิดหน้าจอ)" button
+      closeLiffButton.addEventListener('click', () => {
+        if (liff.isInClient()) {
+          liff.closeWindow();
+        } else {
+          showCustomAlert('LIFF ไม่ได้ทำงานใน LINE App. ไม่สามารถปิดหน้าต่างได้.');
+        }
+      });
 
       form.addEventListener('submit', async function(event) {
         event.preventDefault();
@@ -403,7 +437,7 @@
               // as the Apps Script will now update instead of returning duplicate.
               // However, keeping it as a fallback.
               responseMessage.style.display = 'none';
-              showCustomAlert('คุณเคยลงทะเบียนใช้งานแล้วครับ<br><span style="font-size: 0.8em;">กรุณาใช้บัญชีไลน์อื่น</span>');
+              showCustomAlert('คุณได้ลงทะเบียนผู้ใช้งานนี้แล้ว<br><span style="font-size: 0.8em;">กรุณาใช้บัญชี LINE อื่น</span>');
               // No window close for duplicate, user stays on the page
             } else {
               // Fallback for unexpected status values
