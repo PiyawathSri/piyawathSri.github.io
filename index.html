@@ -337,7 +337,7 @@
             document.getElementById('profileInfo').style.display = 'none'; // Also hide profile info
             responseMessage.style.display = 'none'; // Hide the "กำลังส่งข้อมูล..." message
 
-            showCustomAlert('ลงทะเบียนผู้ใช้งานสำเร็จ!<br><span style="font-size: 0.8em;">ขอบคุณครับ</span>');
+            showCustomAlert('ลงทะเบียนผู้ใช้งานสำเร็จ<br><span style="font-size: 0.8em;">ขอบคุณครับ</span>');
 
             // Close the LIFF window after a short delay
             setTimeout(() => {
@@ -349,7 +349,7 @@
           } else if (result.status === 'duplicate') {
             // Show duplicate registration message using the custom alert modal
             responseMessage.style.display = 'none'; // Hide the "กำลังส่งข้อมูล..." message
-            showCustomAlert('คุณเคยลงทะเบียนแล้ว<br><span style="font-size: 0.8em;">กรุณาใช้บัญชี LINE อื่น</span>');
+            showCustomAlert('คุณได้ลงทะเบียนแล้วครับ<br><span style="font-size: 0.8em;">กรุณาใช้บัญชีไลน์อื่น</span>');
             // Do not close the window immediately for duplicate, let user see the message
           } else {
             // Handle unexpected status or error from Apps Script
