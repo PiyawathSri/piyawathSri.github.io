@@ -8,7 +8,7 @@
   <style>
     body {
       font-family: 'Kanit', sans-serif;
-      background-color: #e8f5e9; /* เขียวอ่อนมาก */
+      background-color: #e8f5e9; /* Very light green */
       display: flex;
       justify-content: center;
       align-items: center;
@@ -28,7 +28,7 @@
     }
     h2 {
       text-align: center;
-      color: #2e7d32; /* เขียวเข้ม */
+      color: #2e7d32; /* Dark green */
       margin-bottom: 25px;
       font-weight: 600;
     }
@@ -72,7 +72,7 @@
     input[type="tel"] {
       width: calc(100% - 20px);
       padding: 12px;
-      border: 1px solid #c8e6c9; /* เขียวอ่อน */
+      border: 1px solid #c8e6c9; /* Light green */
       border-radius: 8px;
       font-size: 16px;
       box-sizing: border-box;
@@ -80,14 +80,14 @@
     }
     input[type="text"]:focus,
     input[type="tel"]:focus {
-      border-color: #4caf50; /* เขียว */
+      border-color: #4caf50; /* Green */
       outline: none;
       box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
     }
     .btn-submit {
       width: 100%;
       padding: 14px;
-      background-color: #4caf50; /* เขียว */
+      background-color: #4caf50; /* Green */
       color: white;
       border: none;
       border-radius: 8px;
@@ -97,7 +97,7 @@
       transition: background-color 0.3s ease, transform 0.2s ease;
     }
     .btn-submit:hover {
-      background-color: #388e3c; /* เขียวเข้มขึ้น */
+      background-color: #388e3c; /* Darker green */
       transform: translateY(-2px);
     }
     .btn-submit:active {
@@ -109,10 +109,10 @@
       font-weight: 500;
     }
     .message.success {
-      color: #2e7d32; /* เขียวเข้ม */
+      color: #2e7d32; /* Dark green */
     }
     .message.error {
-      color: #d32f2f; /* แดง */
+      color: #d32f2f; /* Red */
     }
   </style>
 </head>
@@ -149,19 +149,23 @@
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script>
-    // *** สำคัญ: แทนที่ด้วย Web App URL จาก Google Apps Script ของคุณ ***
+    // *** IMPORTANT: Replace with your Web App URL from Google Apps Script ***
     const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxcZwje0RzHbhqerEOa3QYe2OxupOXr0fzZTiHeLg41B6XqOcNiD4dzgysu65LpY7yg2w/exec';
-    // *** สำคัญ: แทนที่ด้วย LIFF ID ที่คุณจะได้จาก LINE Developers Console ***
+    // *** IMPORTANT: Replace with your LIFF ID from LINE Developers Console ***
     const LIFF_ID = '2007717297-MzNV47AJ';
 
+    /**
+     * Initializes the LIFF SDK and handles user login.
+     */
     async function initializeLiff() {
       try {
         await liff.init({ liffId: LIFF_ID });
 
         if (!liff.isLoggedIn()) {
+          // If not logged in, redirect to LINE login page
           liff.login();
         } else {
-          // ถ้าล็อกอินแล้ว ให้แสดงข้อมูลโปรไฟล์
+          // If already logged in, display user profile
           displayUserProfile();
         }
       } catch (err) {
@@ -171,14 +175,17 @@
       }
     }
 
+    /**
+     * Fetches and displays the LINE user's profile information.
+     */
     async function displayUserProfile() {
       try {
         const profile = await liff.getProfile();
         const profileInfoDiv = document.getElementById('profileInfo');
         document.getElementById('profilePicture').src = profile.pictureUrl;
         document.getElementById('displayName').innerText = profile.displayName;
-        document.getElementById('statusMessage').innerText = profile.statusMessage || ''; // อาจไม่มี status message
-        profileInfoDiv.style.display = 'block'; // แสดงส่วนโปรไฟล์
+        document.getElementById('statusMessage').innerText = profile.statusMessage || ''; // status message might be empty
+        profileInfoDiv.style.display = 'block'; // Show the profile section
       } catch (err) {
         console.error("Failed to get LIFF profile", err);
         document.getElementById('responseMessage').innerText = 'ไม่สามารถดึงข้อมูลโปรไฟล์ LINE ได้: ' + err.message;
@@ -186,14 +193,16 @@
       }
     }
 
+    // Event listener for when the DOM is fully loaded
     document.addEventListener('DOMContentLoaded', () => {
-      initializeLiff();
+      initializeLiff(); // Initialize LIFF when the page loads
 
       const form = document.getElementById('registrationForm');
       const responseMessage = document.getElementById('responseMessage');
 
+      // Event listener for form submission
       form.addEventListener('submit', async function(event) {
-        event.preventDefault();
+        event.preventDefault(); // Prevent default form submission
 
         responseMessage.innerText = 'กำลังส่งข้อมูล...';
         responseMessage.className = 'message';
@@ -204,37 +213,47 @@
         const phone = document.getElementById('phone').value;
         let userId = '';
 
+        // Get LINE User ID if logged in
         if (liff.isLoggedIn()) {
           try {
             const profile = await liff.getProfile();
             userId = profile.userId;
           } catch (err) {
             console.error("Failed to get LIFF profile", err);
-            // ถ้าดึง userId ไม่ได้ ก็ส่งข้อมูลอื่นไป
+            // If userId cannot be retrieved, proceed with other data
           }
         }
 
+        // Prepare form data to be sent
         const formData = {
           name: name,
           license: license,
           unit: unit,
           phone: phone,
-          userId: userId // ส่ง userId ไปยัง Google Sheet ด้วย
+          userId: userId // Send userId to Google Sheet
         };
 
         try {
+          // Send data to Google Apps Script Web App
           const response = await fetch(WEB_APP_URL, {
             method: 'POST',
-            mode: 'no-cors',
+            mode: 'no-cors', // Use 'no-cors' for cross-origin requests to Apps Script
             headers: {
               'Content-Type': 'application/x-www-form-urlencoded',
             },
-            body: new URLSearchParams(formData).toString()
+            body: new URLSearchParams(formData).toString() // Encode data as URL-encoded string
           });
 
           responseMessage.innerText = 'ลงทะเบียนสำเร็จ! ขอบคุณครับ';
           responseMessage.className = 'message success';
-          form.reset(); // ล้างฟอร์ม
+          form.reset(); // Clear the form
+
+          // Close the LIFF window after a short delay to allow the user to see the success message
+          setTimeout(() => {
+            if (liff.isInClient()) { // Check if LIFF is running in LINE client
+              liff.closeWindow();
+            }
+          }, 2000); // Close after 2 seconds
 
         } catch (error) {
           console.error('Error submitting form:', error);
