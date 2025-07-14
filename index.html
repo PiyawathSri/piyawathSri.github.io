@@ -198,7 +198,7 @@
       </div>
       <button type="submit" class="btn-submit">ลงทะเบียน</button>
     </form>
-    <div class="message" id="responseMessage"></div> <!-- This will now be used less directly for alerts -->
+    <div class="message" id="responseMessage"></div>
   </div>
 
   <!-- Custom Modal Popup for alerts -->
@@ -212,7 +212,7 @@
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script>
     // *** IMPORTANT: Replace with your Web App URL from Google Apps Script ***
-    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzPvCIl7P5uMCRjMU-VSXN8PMKQOZE9CkPoio3B5QLNUTiip1yuC3H0zsc_zusMvJWrOw/exec';
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzPvCIl7P5uMCRjMU-VSXN8PMKQOZE9CkPoio3B5QLNUTiip1yuC3H0zsc_zusMvJWrOw/exec'; // <<-- REPLACE THIS URL -->>
     // *** IMPORTANT: Replace with your LIFF ID from LINE Developers Console ***
     const LIFF_ID = '2007717297-MzNV47AJ';
 
@@ -220,6 +220,14 @@
     const customAlertModal = document.getElementById('customAlertModal');
     const customAlertMessage = document.getElementById('customAlertMessage');
     const customAlertCloseBtn = document.getElementById('customAlertCloseBtn');
+
+    // Get form elements
+    const registrationForm = document.getElementById('registrationForm');
+    const nameInput = document.getElementById('name');
+    const licenseInput = document.getElementById('license');
+    const unitInput = document.getElementById('unit');
+    const phoneInput = document.getElementById('phone');
+    const submitButton = document.querySelector('.btn-submit'); // Corrected selector to match class
 
     /**
      * Shows a custom alert modal.
@@ -241,18 +249,17 @@
     customAlertCloseBtn.addEventListener('click', hideCustomAlert);
 
     /**
-     * Initializes the LIFF SDK and handles user login.
+     * Initializes the LIFF SDK and handles user login and data fetching.
      */
     async function initializeLiff() {
       try {
         await liff.init({ liffId: LIFF_ID });
 
         if (!liff.isLoggedIn()) {
-          // If not logged in, redirect to LINE login page
           liff.login();
         } else {
-          // If already logged in, display user profile
-          displayUserProfile();
+          await displayUserProfile();
+          await fetchUserData(); // Attempt to fetch existing user data
         }
       } catch (err) {
         console.error("LIFF initialization failed", err);
@@ -269,97 +276,146 @@
         const profileInfoDiv = document.getElementById('profileInfo');
         document.getElementById('profilePicture').src = profile.pictureUrl;
         document.getElementById('displayName').innerText = profile.displayName;
-        document.getElementById('statusMessage').innerText = profile.statusMessage || ''; // status message might be empty
-        profileInfoDiv.style.display = 'block'; // Show the profile section
+        document.getElementById('statusMessage').innerText = profile.statusMessage || '';
+        profileInfoDiv.style.display = 'block';
       } catch (err) {
         console.error("Failed to get LIFF profile", err);
         showCustomAlert('ไม่สามารถดึงข้อมูลโปรไฟล์ LINE ได้: ' + err.message);
       }
     }
 
-    // Event listener for when the DOM is fully loaded
+    /**
+     * Fetches existing user data from Google Apps Script and pre-fills the form.
+     */
+    async function fetchUserData() {
+      if (!liff.isLoggedIn()) return;
+
+      try {
+        const profile = await liff.getProfile();
+        const userId = profile.userId;
+
+        const response = await fetch(`${WEB_APP_URL}?userId=${userId}`, {
+          method: 'GET',
+          mode: 'cors'
+        });
+        const result = await response.json();
+        console.log('fetchUserData result:', result); // Log result for debugging
+
+        if (result.status === 'found') {
+          const userData = result.data;
+          nameInput.value = userData.name;
+          licenseInput.value = userData.license;
+          unitInput.value = userData.unit;
+          phoneInput.value = userData.phone;
+          // Change button text to indicate update mode
+          submitButton.textContent = 'บันทึกการแก้ไข'; // Use submitButton variable
+          document.querySelector('h2').textContent = 'แก้ไขข้อมูลผู้ใช้งาน';
+          showCustomAlert('พบข้อมูลของคุณแล้ว<br><span style="font-size: 0.8em;">สามารถแก้ไขและบันทึกได้เลย</span>');
+        } else if (result.status === 'not_found') {
+          // User not registered, keep "ลงทะเบียน" button
+          submitButton.textContent = 'ลงทะเบียน'; // Use submitButton variable
+          document.querySelector('h2').textContent = 'ลงทะเบียนผู้ใช้งาน';
+        } else {
+          console.error('Error fetching user data: Unexpected status', result.status, result.message);
+          showCustomAlert('เกิดข้อผิดพลาดในการดึงข้อมูลผู้ใช้งาน: ' + (result.message || 'Unknown status.'));
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        showCustomAlert('เกิดข้อผิดพลาดในการดึงข้อมูลผู้ใช้งาน: ' + error.message);
+      }
+    }
+
+    // Event listener for form submission
     document.addEventListener('DOMContentLoaded', () => {
       initializeLiff(); // Initialize LIFF when the page loads
 
       const form = document.getElementById('registrationForm');
-      const responseMessage = document.getElementById('responseMessage'); // Still keep this for "sending data" message initially
+      const responseMessage = document.getElementById('responseMessage');
 
-      // Event listener for form submission
       form.addEventListener('submit', async function(event) {
-        event.preventDefault(); // Prevent default form submission
+        event.preventDefault();
 
         responseMessage.innerText = 'กำลังส่งข้อมูล...';
         responseMessage.className = 'message';
-        responseMessage.style.display = 'block'; // Show "sending" message
+        responseMessage.style.display = 'block';
 
-        const name = document.getElementById('name').value;
-        const license = document.getElementById('license').value;
-        const unit = document.getElementById('unit').value;
-        const phone = document.getElementById('phone').value;
+        const name = nameInput.value;
+        const license = licenseInput.value;
+        const unit = unitInput.value;
+        const phone = phoneInput.value;
         let userId = '';
 
-        // Get LINE User ID if logged in
         if (liff.isLoggedIn()) {
           try {
             const profile = await liff.getProfile();
             userId = profile.userId;
           } catch (err) {
             console.error("Failed to get LIFF profile", err);
-            // If userId cannot be retrieved, proceed with other data
           }
         }
 
-        // Prepare form data to be sent
         const formData = {
           name: name,
           license: license,
           unit: unit,
           phone: phone,
-          userId: userId // Send userId to Google Sheet
+          userId: userId
         };
 
         try {
-          // Send data to Google Apps Script Web App
           const response = await fetch(WEB_APP_URL, {
             method: 'POST',
-            mode: 'cors', // Ensure this is 'cors' to read the response from Apps Script
+            mode: 'cors',
             headers: {
               'Content-Type': 'application/x-www-form-urlencoded',
             },
-            body: new URLSearchParams(formData).toString() // Encode data as URL-encoded string
+            body: new URLSearchParams(formData).toString()
           });
 
-          const result = await response.json(); // Parse JSON response from Apps Script
+          const result = await response.json();
+          console.log('Form submission result:', result); // Log result for debugging
 
-          if (result.status === 'success') {
-            // Hide the form and show only the success message
-            form.style.display = 'none'; // Hide the form
-            document.getElementById('profileInfo').style.display = 'none'; // Also hide profile info
-            responseMessage.style.display = 'none'; // Hide the "กำลังส่งข้อมูล..." message
+          // Check if result and result.status are valid strings before trimming
+          if (typeof result === 'object' && result !== null && typeof result.status === 'string') {
+            const status = result.status.trim(); // Trim whitespace from status
 
-            showCustomAlert('ลงทะเบียนผู้ใช้งานสำเร็จ!<br><span style="font-size: 0.8em;">ขอบคุณครับ</span>');
-
-            // Close the LIFF window after a short delay
-            setTimeout(() => {
-              if (liff.isInClient()) { // Check if LIFF is running in LINE client
-                liff.closeWindow();
-              }
-            }, 2000); // Close after 2 seconds
-
-          } else if (result.status === 'duplicate') {
-            // Show duplicate registration message using the custom alert modal
-            responseMessage.style.display = 'none'; // Hide the "กำลังส่งข้อมูล..." message
-            showCustomAlert('คุณเคยได้ลงทะเบียนแล้วครับ<br><span style="font-size: 0.8em;">กรุณาใช้บัญชีไลน์อื่น</span>');
-            // Do not close the window immediately for duplicate, let user see the message
+            if (status === 'success') {
+              registrationForm.style.display = 'none';
+              document.getElementById('profileInfo').style.display = 'none';
+              responseMessage.style.display = 'none';
+              showCustomAlert('ลงทะเบียนผู้ใช้งานสำเร็จ<br><span style="font-size: 0.8em;">ขอบคุณครับ</span>');
+              setTimeout(() => {
+                if (liff.isInClient()) {
+                  liff.closeWindow();
+                }
+              }, 2000);
+            } else if (status === 'updated') {
+              registrationForm.style.display = 'none';
+              document.getElementById('profileInfo').style.display = 'none';
+              responseMessage.style.display = 'none';
+              showCustomAlert('แก้ไขข้อมูลผู้ใช้งานสำเร็จ<br><span style="font-size: 0.8em;">ขอบคุณครับ</span>');
+              setTimeout(() => {
+                if (liff.isInClient()) {
+                  liff.closeWindow();
+                }
+              }, 2000);
+            } else if (status === 'duplicate') {
+              responseMessage.style.display = 'none';
+              showCustomAlert('คุณได้ลงทะเบียนผู้ใช้งานนี้แล้ว<br><span style="font-size: 0.8em;">กรุณาใช้บัญชี LINE อื่น</span>');
+            } else {
+              // Fallback for unexpected status values
+              console.error('Unexpected status from server:', result.status, result.message);
+              showCustomAlert('เกิดข้อผิดพลาดในการส่งข้อมูล: ' + (result.message || 'Unknown status received from server.'));
+            }
           } else {
-            // Handle unexpected status or error from Apps Script
-            responseMessage.style.display = 'none'; // Hide the "กำลังส่งข้อมูล..." message
-            showCustomAlert('เกิดข้อผิดพลาดในการส่งข้อมูล: ' + (result.message || 'Unknown error from server.'));
+            // Handle cases where result or result.status is not in the expected format
+            console.error('Invalid response format from server:', result);
+            showCustomAlert('เกิดข้อผิดพลาดในการส่งข้อมูล: รูปแบบการตอบกลับไม่ถูกต้อง');
           }
 
         } catch (error) {
           console.error('Error submitting form:', error);
-          responseMessage.style.display = 'none'; // Hide the "กำลังส่งข้อมูล..." message
+          responseMessage.style.display = 'none';
           showCustomAlert('เกิดข้อผิดพลาดในการส่งข้อมูล: ' + error.message);
         }
       });
