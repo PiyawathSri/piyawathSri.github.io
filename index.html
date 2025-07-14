@@ -115,6 +115,59 @@
     .message.error {
       color: #d32f2f; /* Red */
     }
+
+    /* Modal Styles */
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.6);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+    .modal.show {
+      opacity: 1;
+      visibility: visible;
+    }
+    .modal-content {
+      background-color: white;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      text-align: center;
+      max-width: 400px;
+      width: 90%;
+      transform: translateY(-20px);
+      transition: transform 0.3s ease;
+    }
+    .modal.show .modal-content {
+      transform: translateY(0);
+    }
+    .modal-message {
+      font-size: 1.25rem; /* text-xl */
+      font-weight: 600; /* font-semibold */
+      margin-bottom: 20px;
+      color: #1f2937; /* Gray-800 */
+    }
+    .modal-button {
+      background-color: #4caf50; /* Green */
+      color: white;
+      padding: 10px 25px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+    .modal-button:hover {
+      background-color: #388e3c; /* Darker green */
+    }
   </style>
 </head>
 <body>
@@ -145,15 +198,47 @@
       </div>
       <button type="submit" class="btn-submit">ลงทะเบียน</button>
     </form>
-    <div class="message" id="responseMessage"></div> <!-- Moved outside the form -->
+    <div class="message" id="responseMessage"></div> <!-- This will now be used less directly for alerts -->
+  </div>
+
+  <!-- Custom Modal Popup for alerts -->
+  <div id="customAlertModal" class="modal">
+    <div class="modal-content">
+      <p id="customAlertMessage" class="modal-message"></p>
+      <button id="customAlertCloseBtn" class="modal-button">ตกลง</button>
+    </div>
   </div>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script>
     // *** IMPORTANT: Replace with your Web App URL from Google Apps Script ***
-    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyOhCGTwizFIrHrGxzZUitCw2G3J83E716rjQ8CCH9Iac4a1l-QR1yFiN31eHRz30iM9w/exec';
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxJ7t1ze_7QaaE4uIpntFhjCkKVjusosFr1vadQjU29MfT0hkGa7ewLeJ_NCqNWfWQMKA/exec';
     // *** IMPORTANT: Replace with your LIFF ID from LINE Developers Console ***
     const LIFF_ID = '2007717297-MzNV47AJ';
+
+    // Get modal elements
+    const customAlertModal = document.getElementById('customAlertModal');
+    const customAlertMessage = document.getElementById('customAlertMessage');
+    const customAlertCloseBtn = document.getElementById('customAlertCloseBtn');
+
+    /**
+     * Shows a custom alert modal.
+     * @param {string} message - Message to display in the modal.
+     */
+    function showCustomAlert(message) {
+      customAlertMessage.innerHTML = message; // Use innerHTML to allow <br> tags
+      customAlertModal.classList.add('show');
+    }
+
+    /**
+     * Hides the custom alert modal.
+     */
+    function hideCustomAlert() {
+      customAlertModal.classList.remove('show');
+    }
+
+    // Add event listener to close button for the custom alert modal
+    customAlertCloseBtn.addEventListener('click', hideCustomAlert);
 
     /**
      * Initializes the LIFF SDK and handles user login.
@@ -171,9 +256,7 @@
         }
       } catch (err) {
         console.error("LIFF initialization failed", err);
-        document.getElementById('responseMessage').innerText = 'เกิดข้อผิดพลาดในการโหลด LIFF: ' + err.message;
-        document.getElementById('responseMessage').className = 'message error';
-        document.getElementById('responseMessage').style.display = 'block'; // Show error message
+        showCustomAlert('เกิดข้อผิดพลาดในการโหลด LIFF: ' + err.message);
       }
     }
 
@@ -190,9 +273,7 @@
         profileInfoDiv.style.display = 'block'; // Show the profile section
       } catch (err) {
         console.error("Failed to get LIFF profile", err);
-        document.getElementById('responseMessage').innerText = 'ไม่สามารถดึงข้อมูลโปรไฟล์ LINE ได้: ' + err.message;
-        document.getElementById('responseMessage').className = 'message error';
-        document.getElementById('responseMessage').style.display = 'block'; // Show error message
+        showCustomAlert('ไม่สามารถดึงข้อมูลโปรไฟล์ LINE ได้: ' + err.message);
       }
     }
 
@@ -201,7 +282,7 @@
       initializeLiff(); // Initialize LIFF when the page loads
 
       const form = document.getElementById('registrationForm');
-      const responseMessage = document.getElementById('responseMessage');
+      const responseMessage = document.getElementById('responseMessage'); // Still keep this for "sending data" message initially
 
       // Event listener for form submission
       form.addEventListener('submit', async function(event) {
@@ -241,33 +322,45 @@
           // Send data to Google Apps Script Web App
           const response = await fetch(WEB_APP_URL, {
             method: 'POST',
-            mode: 'no-cors', // Use 'no-cors' for cross-origin requests to Apps Script
+            mode: 'cors', // Ensure this is 'cors' to read the response from Apps Script
             headers: {
               'Content-Type': 'application/x-www-form-urlencoded',
             },
             body: new URLSearchParams(formData).toString() // Encode data as URL-encoded string
           });
 
-          // Hide the form and show only the success message
-          form.style.display = 'none'; // Hide the form
-          document.getElementById('profileInfo').style.display = 'none'; // Also hide profile info
-          // Changed message to include a line break and smaller font for "ขอบคุณครับ"
-          responseMessage.innerHTML = 'ลงทะเบียนผู้ใช้งานสำเร็จ<br><span style="font-size: 0.8em;">ขอบคุณครับ</span>';
-          responseMessage.className = 'message success';
-          responseMessage.style.display = 'block'; // Ensure message is visible
+          const result = await response.json(); // Parse JSON response from Apps Script
 
-          // Close the LIFF window after a short delay to allow the user to see the success message
-          setTimeout(() => {
-            if (liff.isInClient()) { // Check if LIFF is running in LINE client
-              liff.closeWindow();
-            }
-          }, 2000); // Close after 2 seconds
+          if (result.status === 'success') {
+            // Hide the form and show only the success message
+            form.style.display = 'none'; // Hide the form
+            document.getElementById('profileInfo').style.display = 'none'; // Also hide profile info
+            responseMessage.style.display = 'none'; // Hide the "กำลังส่งข้อมูล..." message
+
+            showCustomAlert('ลงทะเบียนผู้ใช้งานสำเร็จ!<br><span style="font-size: 0.8em;">ขอบคุณครับ</span>');
+
+            // Close the LIFF window after a short delay
+            setTimeout(() => {
+              if (liff.isInClient()) { // Check if LIFF is running in LINE client
+                liff.closeWindow();
+              }
+            }, 2000); // Close after 2 seconds
+
+          } else if (result.status === 'duplicate') {
+            // Show duplicate registration message using the custom alert modal
+            responseMessage.style.display = 'none'; // Hide the "กำลังส่งข้อมูล..." message
+            showCustomAlert('คุณเคยลงทะเบียนแล้ว<br><span style="font-size: 0.8em;">กรุณาใช้บัญชี LINE อื่น</span>');
+            // Do not close the window immediately for duplicate, let user see the message
+          } else {
+            // Handle unexpected status or error from Apps Script
+            responseMessage.style.display = 'none'; // Hide the "กำลังส่งข้อมูล..." message
+            showCustomAlert('เกิดข้อผิดพลาดในการส่งข้อมูล: ' + (result.message || 'Unknown error from server.'));
+          }
 
         } catch (error) {
           console.error('Error submitting form:', error);
-          responseMessage.innerText = 'เกิดข้อผิดพลาดในการส่งข้อมูล: ' + error.message;
-          responseMessage.className = 'message error';
-          responseMessage.style.display = 'block'; // Ensure message is visible
+          responseMessage.style.display = 'none'; // Hide the "กำลังส่งข้อมูล..." message
+          showCustomAlert('เกิดข้อผิดพลาดในการส่งข้อมูล: ' + error.message);
         }
       });
     });
