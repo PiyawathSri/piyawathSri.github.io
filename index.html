@@ -310,7 +310,7 @@
           unitInput.value = userData.unit;
           phoneInput.value = userData.phone;
           // Change button text and heading to indicate update mode
-          submitOrUpdateButton.textContent = 'อัปเดทข้อมูลผู้ใช้งาน'; // Changed button text
+          submitOrUpdateButton.textContent = 'อัปเดทข้อมูลผู้ใช้งาน/รับทราบ'; // Changed button text
           document.querySelector('h2').textContent = 'ข้อมูลผู้ใช้งาน'; // Changed heading
           showCustomAlert('พบข้อมูลผู้ใช้งานของคุณแล้ว<br><span style="font-size: 0.8em;">สามารถแก้ไขและกดปุ่มอัปเดทได้เลย</span>'); // Changed alert message
         } else if (result.status === 'not_found') {
@@ -337,7 +337,7 @@
       form.addEventListener('submit', async function(event) {
         event.preventDefault();
 
-        responseMessage.innerText = 'กำลังส่งข้อมูล...';
+        responseMessage.innerText = 'กำลังบันทึกข้อมูล...';
         responseMessage.className = 'message';
         responseMessage.style.display = 'block';
 
